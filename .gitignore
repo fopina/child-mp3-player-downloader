@@ -1,0 +1,50 @@
+# Python environments and bytecode
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Python tooling and build artifacts
+.uv-cache/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Generated search results and downloads
+/matches.json
+/matches.json.tmp
+/downloads/
+*.mp3
+*.m4a
+*.opus
+*.webm
+*.mp4
+*.part
+*.ytdl
+
+# Local credentials and configuration
+.env
+.env.*
+!.env.example
+cookies.txt
+*.cookies.txt
+
+# OS and editor files
+.DS_Store
+._*
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Keep pyproject.toml, uv.lock, and playlist CSVs under version control.
+# .csvs are used for playlists
+*.csv
