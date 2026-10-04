@@ -26,7 +26,20 @@ uv run download.py playlist.csv --download
 
 # Test just the first track
 uv run download.py playlist.csv --download --limit 1
+
+# Search music directly and display titles, channels, durations, IDs, and URLs
+uv run download.py --search "Daft Punk Get Lucky"
+uv run download.py --search "Daft Punk Get Lucky" --limit 10
+
+# Download one of the displayed YouTube IDs as a tagged MP3
+uv run download.py --search --download dQw4w9WgXcQ
 ```
+
+With `--search`, the argument is a search string unless `--download` is set;
+then it must be an 11-character YouTube video ID (not a URL). Search defaults
+to five results and does not create a matches file or downloads directory.
+Single-video downloads use `--output` (default: `downloads/`) and YouTube metadata.
+For IDs starting with a hyphen, place the ID after `--`.
 
 uv manages the project's `.venv` and installs the versions recorded in `uv.lock`.
 To update yt-dlp and its dependencies, run `uv lock --upgrade` followed by

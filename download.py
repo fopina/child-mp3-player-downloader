@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Search a track CSV on YouTube and optionally download tagged MP3s."""
+"""Search a track CSV or a music query on YouTube and optionally download MP3s."""
 import argparse
 import csv
 import json
@@ -55,20 +55,55 @@ def save(path, data):
     temporary.replace(path)
 
 
+def search_music(args):
+    if args.download:
+        args.output.mkdir(parents=True, exist_ok=True)
+        template = str(args.output).replace('%', '%%') + '/%(title)s [%(id)s].%(ext)s'
+        run_ytdlp(['--no-playlist', '-f', 'bestaudio/best', '-x', '--audio-format', 'mp3',
+                   '--audio-quality', '320K', '--embed-metadata', '--no-overwrites',
+                   '-o', template, 'https://www.youtube.com/watch?v=' + args.tracks])
+        return 0
+    query = f'ytsearch{args.limit or 5}:{args.tracks}'
+    result = json.loads(run_ytdlp(['--flat-playlist', '--dump-single-json', query], True))
+    videos = [video for video in result.get('entries') or []
+              if video and re.fullmatch(r'[A-Za-z0-9_-]{11}', video.get('id') or '')]
+    if not videos:
+        print('No results found.')
+    for index, video in enumerate(videos, 1):
+        duration = video.get('duration')
+        duration = f'{int(duration) // 60}:{int(duration) % 60:02d}' if duration is not None else 'unknown duration'
+        print(f"[{index}] {video.get('title') or '(untitled)'}")
+        print(f"  {video.get('channel') or video.get('uploader') or 'Unknown channel'} | {duration}")
+        print(f"  ID: {video['id']} | https://www.youtube.com/watch?v={video['id']}")
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('tracks', type=Path, help='Path to the playlist CSV')
+    parser.add_argument('tracks', help='Playlist CSV path; with --search, a query or (with --download) YouTube ID')
+    parser.add_argument('--search', action='store_true', help='Search music instead of processing a playlist CSV')
     parser.add_argument('--matches', type=Path, default=Path('matches.json'))
     parser.add_argument('--output', type=Path, default=Path('downloads'))
-    parser.add_argument('--download', action='store_true', help='Download confident matches; default only searches')
-    parser.add_argument('--limit', type=int, help='Process only the first N tracks')
+    parser.add_argument('--download', action='store_true', help='Download confident CSV matches, or a YouTube ID with --search')
+    parser.add_argument('--limit', type=int, help='Process first N CSV tracks, or display N search results (default: 5)')
     parser.add_argument('--refresh', action='store_true', help='Search again instead of reusing saved matches')
     args = parser.parse_args()
     if args.limit is not None and args.limit < 1:
         parser.error('--limit must be positive')
+    if args.search:
+        if args.download and not re.fullmatch(r'[A-Za-z0-9_-]{11}', args.tracks):
+            parser.error('--search --download requires an 11-character YouTube video ID')
+        if not args.tracks.strip():
+            parser.error('search query must not be empty')
     if args.download and any(not shutil.which(x) for x in ('ffmpeg', 'ffprobe')):
         parser.error('Install FFmpeg first (macOS: brew install ffmpeg)')
-    with args.tracks.open(newline='', encoding='utf-8-sig') as f:
+    if args.search:
+        try:
+            return search_music(args)
+        except (RuntimeError, ValueError, subprocess.TimeoutExpired) as error:
+            print(f'Failed: {error}', file=sys.stderr)
+            return 1
+    with Path(args.tracks).open(newline='', encoding='utf-8-sig') as f:
         tracks = list(csv.DictReader(f))
     for track in tracks:
         if not all(track.get(k) for k in ('title', 'artist', 'duration')) or not track['duration'].isdigit():
