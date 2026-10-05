@@ -1,7 +1,7 @@
 [project]
 name = "youtube-to-mp3-player"
 version = "0.1.0"
-description = "Search YouTube for playlist tracks and download tagged MP3s"
+description = "Prepare music and YouTube videos for AGPTEK players"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = ["yt-dlp[default]>=2026.8.19"]
