@@ -1,4 +1,9 @@
-# Spotify track list → YouTube MP3s
+# AGPTEK Swiss Army Knife
+
+A toolkit for preparing media for an AGPTEK player, with MP3 music downloads
+and YouTube video conversion for the **AGPTEK M3**.
+
+## Music
 
 Search YouTube for tracks in a CSV, rank five candidates using title/artist and
 duration, and download confident matches as tagged 320 kbps MP3s with yt-dlp and
@@ -63,3 +68,46 @@ and a separate `--matches` and
 
 MP3 encoding uses the best available YouTube audio as input. 320 kbps limits
 additional encoding loss; it cannot recover detail missing from the source.
+
+## YouTube videos → AMV
+
+Download videos with the same yt-dlp library used for music, then convert them
+with FFmpeg:
+
+```sh
+uv run video.py 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+uv run video.py dQw4w9WgXcQ --output videos/
+# Fallback if the player rejects the 25 fps video:
+uv run video.py dQw4w9WgXcQ --fps 15 --output videos-15fps/
+```
+
+Watch URLs, Shorts URLs, youtu.be links, and 11-character IDs are accepted.
+For IDs starting with a hyphen, place the ID after `--`. Output is named
+`<video-id>.amv`; existing files are skipped. Use a separate output directory
+when trying another frame rate. Temporary downloads are removed after conversion
+or failure; failed conversions do not leave a final AMV file.
+
+The preset follows the final command in the
+[conversion discussion](https://chatgpt.com/share/6ac42ab5-9cb8-83eb-8aad-614bb7c9cd66):
+
+```sh
+ffmpeg -i input.mp4 \
+  -vf "fps=25,scale=320:240:force_original_aspect_ratio=decrease,pad=320:240:(ow-iw)/2:(oh-ih)/2" \
+  -c:v amv -fps_mode cfr \
+  -c:a adpcm_ima_amv -ar 22050 -ac 1 -block_size 882 output.amv
+```
+
+This preserves aspect ratio with padding at 320×240 and uses mono audio.
+The 15 fps option uses 1470-sample blocks instead. FFmpeg needs the `amv` and
+`adpcm_ima_amv` encoders; check with `ffmpeg -encoders`. Sources must contain
+both video and audio. Copy the resulting AMV to the player's removable drive.
+Playback on the physical M3 still needs verification; the discussion does not
+confirm its exact required resolution, and other AGPTEK models may need a
+different preset.
+
+## Planned: ebooks for the screen
+
+The player's ebook reader supports raw `.txt` files. A future tool could prepare
+ebooks as screen-ready text: wrap lines to fit the display, tidy paragraph and
+chapter spacing, and normalize characters and encoding for the player. This
+feature is an idea and is not implemented yet.
